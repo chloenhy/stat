@@ -80,6 +80,7 @@ ggplot(data=var.df, aes(x=var)) +
      the theoretical variance of 25.</p>
 
   <p>Distribution of 10000 exponentials vs distribution of 1000 means of 40 exponentials:</p>
+  
 ```{r}
 # Distribution of 10000 exponentials
 hist(rexp(10000), col='salmon', border = 'salmon')
@@ -91,5 +92,6 @@ ggplot(data=expo.df, aes(x=allMeans)) +
     theme(plot.title = element_text(size = 10)) + theme_minimal() + 
     stat_function(fun=dnorm, args= list(mean=apply(expo.df,2,mean), sd=apply(expo.df, 2, sd)))
 ```
+
   <p>The distribution of 1000 means of 40 exponentials (2nd graph) appears to be normally distributed, whereas the distribution of 10000 exponentials (1st graph) does not.</p>
   </body></html>
