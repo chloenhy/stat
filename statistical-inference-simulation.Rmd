@@ -1,0 +1,111 @@
+---
+title: "Statistical Inference"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+  <html>
+  <head>
+  <title>Statistical Inference - report</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <style type="text/css">
+h1 {
+  font-size: 2em;
+}
+
+h1, p, table{
+  font-family: Helvetica, Arial;
+  font-weight: 200;
+}
+body{
+  padding: 2em;
+}
+  </style>
+</head>
+<body>
+  <h1>Statistical Inference on Coursera</h1>
+  <table><tr>
+    <th>Title:</th>
+    <td>Project report on simulation exercise and basic inferential data analysis.</td>
+    </tr><tr>
+    <th>Author:</th> 
+    <td>Chloe Ng</td>
+    </tr><tr>
+    <th>Overview:</th>
+    <td>This report consists of two parts - 1. Simulation of an exponential distribution and its asymtotic approximation 2. Inferential data analysis of ToothGrowth data in R dataset packages.</td>
+  </tr></table>
+    
+  <p>Part 1: <strong>Exponential distribution simulation</strong></p>
+  
+  <p>The code below plots the distribution of the averages of 40 random variables following exponential distribution with lambda = 0.2, simulated 1000 times.</p>
+  
+```{r}
+ if(!require(ggplot2)) install.packages("ggplot2",repos = "http://cran.us.r-project.org")
+  library("ggplot2")
+  lambda <- 0.2
+  n <- 40
+  no.sim <- 1000
+  # a quick plot to see how 1000 simulations of 40 exponential r.v. looks like
+  mainPlot <- qplot(replicate(1000, mean(rexp(40, lambda))),
+                    binwidth=0.1, 
+                    fill='salmon', alpha = 0.5,
+                    show.legend=FALSE,
+                    main = 'Distribution of 1000 simulation of means \nof 40 r.v. under exponential distribution') 
+  mainPlot
+```
+<p>Sample Mean vs Theoretical Mean:</p>
+```{r}
+    # create matrix of simulations 
+    expoMatrix <- matrix(replicate(no.sim,rexp(n, lambda)), nrow = 1000, ncol = 40, byrow = TRUE) # 1000 simulation of 'expo'
+    # create dataframe for use in ggplot
+    expo.df <- data.frame(allMeans=apply(expoMatrix, 1,mean))
+    mean <- apply(expo.df, 2, mean)
+    # create a frequency histogram
+    ggplot(data=expo.df, aes(x=allMeans)) + 
+        geom_histogram(binwidth =.1, fill='salmon', alpha=0.5) + 
+        geom_vline(xintercept = mean, color='darkred',linetype='dashed') + 
+        ggtitle('Distribution of 1000 simulation of means \nof 40 r.v. under exponential distribution') + 
+        theme(plot.title = element_text(size = 10)) + 
+        theme_minimal()
+    # the mean of simulation is close to the theoretical mean of exponentials
+```
+  <p>From the above, we have the mean from simulation is <!--rinline mean -->, which is close to 
+     the theoretical mean of 5.</p>
+
+  <p>Sample Variance vs Theoretical Variance:</p>
+```{r}
+    # create dataframe for ggplot from the existing matrix 
+    var.df <- data.frame(var=apply(expoMatrix, 1, var))
+    # calculate mean of all variances 
+    meanVar <- apply(var.df, 2, mean)
+    # create histogram and dashed line to indicate mean of variances
+    ggplot(data=var.df, aes(x=var)) + 
+        geom_histogram(binwidth =.5, fill='salmon', alpha=0.5) + 
+        geom_vline(xintercept = meanVar, color='darkred',linetype='dashed') + 
+        ggtitle('Distribution of 1000 variances of the 40 r.v. under exponential distribution') + 
+        theme(plot.title = element_text(size = 10)) + 
+        theme_minimal()
+```
+    
+  <p>From the above, we have the mean of variances from simulation as <!--rinline meanVar -->, which is close to 
+     the theoretical variance of 25.</p>
+
+  <p>Distribution of 10000 exponentials vs distribution of 1000 means of 40 exponentials:</p>
+```{r}
+    # Distribution of 10000 exponentials
+    hist(rexp(10000), col='salmon', border = 'salmon')
+    # Distribution of 1000 means of 40 exponentials with normal curve overlayed 
+    ggplot(data=expo.df, aes(x=allMeans)) + 
+        geom_histogram(aes(y=..density..), binwidth =.1, fill='salmon', alpha=0.5) + 
+        geom_vline(xintercept = mean, color='darkred',linetype='dashed') + 
+        ggtitle('Distribution of 1000 simulation of means \nof 40 r.v. under exponential distribution') + 
+        theme(plot.title = element_text(size = 10)) + theme_minimal() + 
+        stat_function(fun=dnorm, args= list(mean=apply(expo.df,2,mean), sd=apply(expo.df, 2, sd)))
+    
+```
+  <p>The distribution of 1000 means of 40 exponentials (2nd graph) appears to be normally distributed, whereas the distribution of 10000 exponentials (1st graph) does not.</p>
