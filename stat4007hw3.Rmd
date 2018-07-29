@@ -1,0 +1,131 @@
+---
+title: "STAT4007 QUALITY CONTROL HW3"
+date: "4/9/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Overview: This assignment is to construct tabular CUSUM, CUSUM chart, tabular EWMA 
+and EWMA chart for a chemical process, which has bath concentration measurements 
+in ppm for the last 30 hours. The target mean value mu naught is 175ppm.
+
+Load and prepare the data 
+```{r}
+mydata <- read.table("~/Downloads/hw3prob5data.txt")
+myvector <- as.vector(mydata$V1)
+# estimate sigma from the standard deviation of 30 data points
+sigma <- sd(myvector) 
+# standardized parameters h and k 
+h <- 5
+k <- 0.5
+mu0 <- 175
+head(myvector)
+```
+```{r}
+K <- k*sigma
+H <- h*sigma
+n <- length(myvector)
+Cu <- myvector
+Cl <- myvector
+Nu <- rep(0,n)
+Nl <- rep(0,n)
+Cu[1] <- max(0, myvector[1]- (mu0+K))
+Cl[1] <- max(0, (mu0-K)-myvector[1])
+Nu[1] <- (Cu[1]>0)
+Nl[1] <- (Cl[1]>0)
+for(i in 2:n){
+    Cu[i] <- max(0, myvector[i]-(mu0+K)+Cu[i-1])
+    Cl[i] <- max(0, (mu0-K)-myvector[i]+Cl[i-1])
+    Nu[i] <- ((Nu[i-1]+1)*(Cu[i]>0))
+    Nl[i] <- ((Nl[i-1]+1)*(Cl[i]>0))
+}
+```
+```{r}
+plot(Cu, type = "n", ylab = "Cumulative Sum", xlab = NA, main = "Cusum Status Chart")
+lines(Cu, lty=1)
+lines(Cl, lty=2)
+points(Cu,pch=4)
+points(Cl,pch=6)
+legend(10,200, c("Upper Cusum","Lower Cusum"),pch=c(4,6),cex=0.9)
+abline(h=H,lty=6)
+text(5,100, "decision interval H",cex=.8)
+```
+
+From the above chart, the process is out-of-control at the 26th sample.
+Construct a cusum status table 
+```{r}
+table1 <- cbind("i" = seq(1,n), "xi"=myvector, "xi-(mu0+K)"= myvector-(mu0+K), "Ci+" = Cu, "Ni+"=Nu, "(mu0-K)-xi"=(mu0-K)-myvector, "Ci-"=Cl, "Ni-"= Nl)
+head(table1)
+```
+
+The same chart and table constructed with a 50% headstart:
+```{r}
+# HEADSTART
+mydata <- read.table("~/Downloads/hw3prob5data.txt")
+myvector <- as.vector(mydata$V1)
+sigma <- sd(myvector)
+h <- 5
+k <- 0.5
+mu0 <- 175
+K <- k*sigma
+H <- h*sigma
+n <- length(myvector)
+Cu <- myvector
+Cl <- myvector
+Nu <- rep(0,n)
+Nl <- rep(0,n)
+Cu[1] <- max(0, myvector[1]- (mu0+K)+H/2)
+Cl[1] <- max(0, (mu0-K)-myvector[1]+H/2)
+Nu[1] <- (Cu[1]>0)
+Nl[1] <- (Cl[1]>0)
+for(i in 2:n){
+    Cu[i] <- max(0, myvector[i]-(mu0+K)+Cu[i-1])
+    Cl[i] <- max(0, (mu0-K)-myvector[i]+Cl[i-1])
+    Nu[i] <- ((Nu[i-1]+1)*(Cu[i]>0))
+    Nl[i] <- ((Nl[i-1]+1)*(Cl[i]>0))
+}
+```
+```{r}
+plot(Cu, type = "n", ylab = "Cumulative Sum", xlab = NA, main = "Cusum Status Chart")
+lines(Cu, lty=1)
+lines(Cl, lty=2)
+points(Cu,pch=4)
+points(Cl,pch=6)
+legend(10,200, c("Upper Cusum","Lower Cusum"),pch=c(4,6),cex=0.9)
+abline(h=H,lty=6)
+text(5,100, "decision interval H",cex=.8)
+```
+```{r}
+table2 <- cbind("i" = seq(1,n), "xi"=myvector, "xi-(mu0+K)"= myvector-(mu0+K), "Ci+" = Cu, "Ni+"=Nu, "(mu0-K)-xi"=(mu0-K)-myvector, "Ci-"=Cl, "Ni-"= Nl)
+```
+Constructing Exponentially-Weighted Moving Average Chart using λ=0.05 and L=2.6:
+```{r}
+# Prepare varaibles and plug into formulas
+lambda <- 0.05
+L <- 2.6
+z <- myvector
+z[1] <- lambda*myvector[1]+(1-lambda)*mu0
+for (i in 2:n){
+    z[i] <- lambda*myvector[i]+(1-lambda)*z[i-1]
+    UCL <- mu0 + L*sigma*sqrt((lambda/(2-lambda))*(1-(1-lambda)^(2*seq(1,n))))
+    LCL <- mu0 - L*sigma*sqrt((lambda/(2-lambda))*(1-(1-lambda)^(2*seq(1,n))))
+}
+```
+
+```{r}
+# plot the graph
+plot(z,type="b",pch=23,main="EWMA Chart",ylim=c(min(LCL,z),max(UCL,z)))
+abline(h=mu0) 								
+lines(UCL,type="l",pch=23)						
+lines(LCL,type="l",pch=23)			
+larger<-as.vector(z>UCL)
+smaller<-as.vector(z<LCL)
+```
+
+```{r}
+# construct EWMA in tabular form 
+table3 <- cbind('i'=seq(1,n), "xi"= myvector, "EWMA, zi"=z, "UCL"=UCL, "LCL"=LCL, ">UCL?"=larger, "<LCL?"=smaller)
+head(table3)
+```
